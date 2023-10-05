@@ -35,35 +35,66 @@ class Light implements Device {
     public String getStatus() {
         return "Light " + id + " is " + status + ".";
     }
+    
+    public void update(int temperature) {
+        if (temperature >= 75) {
+            this.turnOff();
+        }
+    }
 }
 
 // Concrete Thermostat class
-class Thermostat implements Device {
+interface Observer {
+    void update(int temperature);
+}
+
+interface Observable {
+    void addObserver(Light observer);
+    void removeObserver(Light observer);
+    void notifyObservers(int temperature);
+}
+
+class Thermostat implements Device, Observable {
     private int id;
     private int temperature;
+    private List<Light> observers;
 
     public Thermostat(int id, int temperature) {
         this.id = id;
         this.temperature = temperature;
+        this.observers = new ArrayList<>();
     }
 
     public void setTemperature(int temperature) {
         this.temperature = temperature;
+        notifyObservers(this.temperature);
     }
 
     @Override
-    public void turnOn() {
-        // Thermostat doesn't have an on/off state
-    }
+    public void turnOn() {}
 
     @Override
-    public void turnOff() {
-        // Thermostat doesn't have an on/off state
-    }
+    public void turnOff() {}
 
     @Override
     public String getStatus() {
         return "Thermostat is set to " + temperature + " degrees.";
+    }
+
+
+    public void addObserver(Light l1) {
+        observers.add(l1);
+    }
+    
+    public void removeObserver(Light l12) {
+        observers.remove(l12);
+    }
+
+    @Override
+    public void notifyObservers(int temperature) {
+        for (Light observer : observers) {
+            observer.update(temperature);
+        }
     }
 }
 
@@ -180,10 +211,23 @@ class SmartHomeSystem {
 public class SmartHomeSimulation {
     public static void main(String[] args) {
         // Initialize Smart Home System
-        SmartHomeSystem smartHome = new SmartHomeSystem();
+         SmartHomeSystem smartHome = new SmartHomeSystem();
 
-        Scanner scanner = new Scanner(System.in);
+        // Add Devices
+        smartHome.addDevice(DeviceFactory.createDevice(1, "light", 0));
 
+        Thermostat thermostat = new Thermostat(2, 70);
+        smartHome.addDevice(thermostat);
+
+        smartHome.addDevice(DeviceFactory.createDevice(3, "door", 0));
+
+        // Set up automatic task
+        Light light1 = (Light) smartHome.getDevices().get(0);
+        Light light2 = (Light) smartHome.getDevices().get(1);
+
+        thermostat.addObserver(light1);
+        thermostat.addObserver(light2);
+        Scanner scanner= new Scanner(System.in);
         while (true) {
             System.out.println("\n--- Smart Home System Menu ---");
             System.out.println("1. Add Light");
